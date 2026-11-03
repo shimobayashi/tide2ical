@@ -50,11 +50,41 @@ URL を知る人は内容を取得できるため、配信 URL を公開リポ�
 1. `mise install` で Ruby と Terraform を用意します。
 2. `bundle install` で開発・テスト用の依存を用意します。
 3. AWS の対象アカウントとリージョンに、SSM の**標準 String パラメータ**を作成します。初期のパラメータ名は `/tide2ical/location` です。値は `prefecture_code` と `harbor_code` をキーに持つ JSON とし、[提供元の港一覧](https://tide736.net/)で選んだ実際の数値を入れてください。値をリポジトリ内のファイルに保存する必要はありません。SecureString はこの構成では扱いません。
-4. 既存の Terraform 状態用 S3 バケットに、このプロジェクト専用のキーを用意します。`terraform/backend.hcl.example` を基に、無視対象の `terraform/backend.hcl` を作り、非公開の実際の保存先を設定してください。既存プロジェクトと同じ状態のキーを使わないでください。
+4. Terraform 状態用の S3 バケットを用意します。既存のバケットを使う場合は、このプロジェクト専用のキーを選びます。新しく作る場合は下の「状態保存用バケットの作成」に進んでください。`terraform/backend.hcl.example` を基に、無視対象の `terraform/backend.hcl` に非公開の実際の保存先を設定します。既存プロジェクトと同じ状態のキーを使わないでください。
 5. `terraform/terraform.tfvars.example` を基に、無視対象の `terraform/terraform.tfvars` を作ります。通知先を設定し、SSM のパラメータ名を変えた場合はここにも反映します。地域の値や実際のバケット名は書きません。
 
 認証は AWS CLI のプロファイルなどで用意してください。
 認証情報を Terraform やソースコードに書かないでください。
+
+### 状態保存用バケットの作成
+
+専用のバケットを新しく作る場合だけ実行します。
+初回はローカルに状態を保存し、バケットができてから状態も S3 に移します。
+
+```sh
+terraform -chdir=terraform/bootstrap init
+terraform -chdir=terraform/bootstrap plan
+terraform -chdir=terraform/bootstrap apply
+```
+
+この構成は、非公開・暗号化・バージョン管理を設定したバケットを作り、HTTP でのアクセスを拒否します。
+状態保存先を誤って削除しないよう `prevent_destroy` を設定しています。
+バケット名は `terraform -chdir=terraform/bootstrap output -raw state_bucket` で手元だけで確認してください。
+
+`terraform/backend.hcl.example` を基に、アプリ用の `terraform/backend.hcl` と、初期化用の `terraform/bootstrap/backend.hcl` を作ります。
+両方に同じバケットを指定し、状態のキーをそれぞれ `tide2ical/application.tfstate`、`tide2ical/bootstrap.tfstate` に分けてください。
+その後、次のコマンドで初期化用の状態を S3 に移します。
+
+```sh
+cp terraform/bootstrap/backend.tf.example terraform/bootstrap/backend_override.tf
+terraform -chdir=terraform/bootstrap init -migrate-state -backend-config=backend.hcl
+```
+
+移行先のキーと移行内容を確認して承認してください。
+`backend.hcl`、`backend_override.tf`、ローカルの状態ファイルはコミット対象外です。
+再実行する場合は移行後のバックエンドを使い、状態を新しく作り直さないでください。
+
+[S3 バックエンドと状態のロック](https://developer.hashicorp.com/terraform/language/backend/s3)・[prevent_destroy の仕様](https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#prevent_destroy)
 
 ### 配布物の作成と適用
 
@@ -110,6 +140,9 @@ terraform -chdir=terraform fmt -check -recursive
 terraform -chdir=terraform init -backend=false -lockfile=readonly
 terraform -chdir=terraform validate
 terraform -chdir=terraform test
+terraform -chdir=terraform/bootstrap init -backend=false -lockfile=readonly
+terraform -chdir=terraform/bootstrap validate
+terraform -chdir=terraform/bootstrap test
 ```
 
 テストには模擬 API・AWS の応答を使い、認証や実際の地域の設定は不要です。
