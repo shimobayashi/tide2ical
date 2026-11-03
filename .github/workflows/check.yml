@@ -1,0 +1,33 @@
+name: 検証
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.12'
+          bundler-cache: true
+      - name: Ruby のテスト
+        run: TZ=UTC bundle exec ruby test/calendar_test.rb
+      - name: Lambda の配布物を準備
+        run: ruby scripts/package_lambda.rb
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.17.0'
+      - name: Terraform の書式を検査
+        run: terraform -chdir=terraform fmt -check -recursive
+      - name: Terraform を初期化
+        run: terraform -chdir=terraform init -backend=false -lockfile=readonly
+      - name: Terraform の構成を検査
+        run: terraform -chdir=terraform validate
+      - name: Terraform のテスト
+        run: terraform -chdir=terraform test
