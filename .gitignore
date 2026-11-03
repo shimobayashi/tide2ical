@@ -11,3 +11,5 @@
 *.tfvars
 !*.tfvars.example
 /terraform/backend.hcl
+/terraform/bootstrap/backend.hcl
+/terraform/bootstrap/backend_override.tf
