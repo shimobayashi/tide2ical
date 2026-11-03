@@ -77,7 +77,8 @@ Terraform は SSM の値を確認しないので、適用前に AWS 側でパラ
 ```sh
 aws lambda invoke --region ap-northeast-1 \
   --function-name "$(terraform -chdir=terraform output -raw function_name)" \
-  --invocation-type Event --payload '{}' /tmp/tide2ical-invoke.json
+  --invocation-type Event --cli-binary-format raw-in-base64-out \
+  --payload '{}' /tmp/tide2ical-invoke.json
 ```
 
 呼び出しの受付は生成の成功を意味しません。
