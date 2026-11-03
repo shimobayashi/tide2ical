@@ -31,3 +31,9 @@ jobs:
         run: terraform -chdir=terraform validate
       - name: Terraform のテスト
         run: terraform -chdir=terraform test
+      - name: 状態保存用 Terraform を初期化
+        run: terraform -chdir=terraform/bootstrap init -backend=false -lockfile=readonly
+      - name: 状態保存用 Terraform の構成を検査
+        run: terraform -chdir=terraform/bootstrap validate
+      - name: 状態保存用 Terraform のテスト
+        run: terraform -chdir=terraform/bootstrap test
