@@ -1,0 +1,4 @@
+location_parameter_name = "/tide2ical/location"
+calendar_days           = 90
+
+notification_email = "your-address@example.com"

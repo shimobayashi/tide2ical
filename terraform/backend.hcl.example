@@ -1,0 +1,5 @@
+bucket       = "YOUR_EXISTING_TERRAFORM_STATE_BUCKET"
+key          = "tide2ical/terraform.tfstate"
+region       = "ap-northeast-1"
+encrypt      = true
+use_lockfile = true

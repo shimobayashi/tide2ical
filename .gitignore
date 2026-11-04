@@ -1,0 +1,15 @@
+/.bundle/
+/.env
+/.env.*
+!/mise.toml
+/vendor/
+/build/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+/terraform/backend.hcl
+/terraform/bootstrap/backend.hcl
+/terraform/bootstrap/backend_override.tf
